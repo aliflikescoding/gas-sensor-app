@@ -4,7 +4,10 @@ import {
   BluetoothConnected,
   AlertCircle,
   Wifi,
+  History,
+  BookOpenText,
 } from "lucide-react";
+import { NavLink } from "react-router-dom";
 
 const HomePage = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -180,14 +183,14 @@ const HomePage = () => {
 
   return (
     <div className="bg-base-200 min-h-screen">
-      <div className="container mx-auto py-10">
+      <div className="container mx-auto py-10 px-4">
         <div className="bg-base-100 rounded-box shadow-lg p-6">
-          <div className="mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               {isConnected ? (
                 <>
                   <BluetoothConnected className="w-6 h-6 text-success" />
-                  <button onClick={disconnect} className="btn btn-error btn-sm">
+                  <button onClick={disconnect} className="btn btn-error">
                     Disconnect
                   </button>
                 </>
@@ -197,7 +200,7 @@ const HomePage = () => {
                   <button
                     onClick={connectToBluetooth}
                     disabled={isConnecting}
-                    className="btn btn-primary btn-sm"
+                    className="btn btn-primary"
                   >
                     {isConnecting ? (
                       <>
@@ -210,6 +213,16 @@ const HomePage = () => {
                   </button>
                 </>
               )}
+            </div>
+            <div className="flex items-center gap-4">
+              <NavLink to="/history" className="btn">
+                <History className="w-5 h-5" />
+                History
+              </NavLink>
+              <NavLink to="/today" className="btn">
+                <BookOpenText className="w-5 h-5" />
+                Todays Data
+              </NavLink>
             </div>
           </div>
 
@@ -309,9 +322,7 @@ const HomePage = () => {
 
           <div className="mt-4 text-xs text-base-content opacity-70 space-y-1">
             <p>• Data updates every 1 minute from the sensor</p>
-            <p>
-              • Make sure your ESP32 is powered on
-            </p>
+            <p>• Make sure your ESP32 is powered on</p>
             <p>• Stay within Bluetooth range (typically 10-30 feet)</p>
           </div>
         </div>

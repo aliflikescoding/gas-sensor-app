@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   Bluetooth,
   BluetoothConnected,
@@ -28,57 +28,30 @@ const HomePage = () => {
   const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
   const CHARACTERISTIC_UUID = "abcd1234-5678-1234-5678-abcdef123456";
 
-  // Get today's date key for localStorage
-  const getTodayKey = () => {
-    const today = new Date();
-    return `todays_data_${today.toISOString().split("T")[0]}`;
-  };
-
-  // Load today's data from localStorage on component mount
-  useEffect(() => {
-    const todayKey = getTodayKey();
-    const savedData = localStorage.getItem(todayKey);
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        // If we have data from today, you might want to do something with it
-        console.log("Loaded today's data from localStorage:", parsedData);
-      } catch (err) {
-        console.error("Error loading today's data:", err);
-      }
-    }
-  }, []);
-
-  const addLog = (message) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogs((prev) => [...prev.slice(-4), `${timestamp}: ${message}`]);
-  };
-
+  // Save data to todays_data (one key only)
   const saveToTodaysData = (gasData) => {
     try {
-      const todayKey = getTodayKey();
       const timestamp = new Date().toISOString();
 
       const newEntry = {
         ...gasData,
         dateTime: timestamp,
-        timestamp: new Date().getTime(),
       };
 
-      // Get existing data for today
-      const existingData = localStorage.getItem(todayKey);
+      // Get existing data
+      const existingData = localStorage.getItem("todays_data");
       let todaysData = existingData ? JSON.parse(existingData) : [];
 
       // Add new entry
       todaysData.push(newEntry);
 
-      // Keep only the last 100 entries to prevent localStorage overflow
+      // Keep only the last 100 entries
       if (todaysData.length > 100) {
         todaysData = todaysData.slice(-100);
       }
 
       // Save back to localStorage
-      localStorage.setItem(todayKey, JSON.stringify(todaysData));
+      localStorage.setItem("todays_data", JSON.stringify(todaysData));
 
       console.log("Saved to today's data:", newEntry);
       addLog(`Data saved to today's storage (${todaysData.length} entries)`);
@@ -86,6 +59,11 @@ const HomePage = () => {
       console.error("Error saving to today's data:", err);
       addLog("Error saving data to storage");
     }
+  };
+
+  const addLog = (message) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs((prev) => [...prev.slice(-4), `${timestamp}: ${message}`]);
   };
 
   const parseGasData = (dataString) => {
@@ -133,7 +111,6 @@ const HomePage = () => {
       setGasData(parsedData);
       setLastUpdate(new Date());
 
-      // Save to today's data in localStorage
       saveToTodaysData(parsedData);
     }
   };
@@ -239,7 +216,6 @@ const HomePage = () => {
     }
   };
 
-  
   return (
     <div className="bg-base-200 min-h-screen">
       <div className="container mx-auto py-10 px-4">
@@ -280,7 +256,7 @@ const HomePage = () => {
               </NavLink>
               <NavLink to="/today" className="btn">
                 <BookOpenText className="w-5 h-5" />
-                Todays Data
+                Today's Data
               </NavLink>
             </div>
           </div>
@@ -289,31 +265,6 @@ const HomePage = () => {
             <div className="alert alert-error mb-4">
               <AlertCircle className="w-5 h-5" />
               <span>{error}</span>
-            </div>
-          )}
-
-          {!navigator.bluetooth && (
-            <div className="alert alert-warning mb-4">
-              <p>
-                <strong>Browser not supported:</strong>
-                {navigator.userAgent.includes("Chrome") &&
-                navigator.userAgent.includes("Linux") ? (
-                  <span>
-                    {" "}
-                    Web Bluetooth requires flags in Chrome on Linux. Start
-                    Chrome with:{" "}
-                    <code className="bg-base-300 px-1 rounded text-sm">
-                      google-chrome --enable-experimental-web-platform-features
-                      --enable-web-bluetooth
-                    </code>
-                  </span>
-                ) : (
-                  <span>
-                    {" "}
-                    Web Bluetooth requires Chrome, Edge, or Opera browser.
-                  </span>
-                )}
-              </p>
             </div>
           )}
 

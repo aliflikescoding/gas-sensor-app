@@ -22,6 +22,7 @@ const TodayPage = () => {
 
     const count = data.length;
     return {
+      date: today, // keep the date with the average
       etanol: sums.etanol / count,
       co2: sums.co2 / count,
       co: sums.co / count,
@@ -37,7 +38,7 @@ const TodayPage = () => {
       (entry) => entry.dateTime.split("T")[0] === today
     );
 
-    // If there’s old data, average and push to history
+    // Handle old data → history
     if (saved.length > 0 && filtered.length !== saved.length) {
       const oldData = saved.filter(
         (entry) => entry.dateTime.split("T")[0] !== today
@@ -45,15 +46,48 @@ const TodayPage = () => {
       const avg = calculateAverage(oldData);
       if (avg) {
         const history = JSON.parse(localStorage.getItem("data_history")) || [];
-        history.push(avg);
+        // Merge if same date exists
+        const existingIndex = history.findIndex((h) => h.date === avg.date);
+        if (existingIndex >= 0) {
+          history[existingIndex] = {
+            ...avg,
+          };
+        } else {
+          history.push(avg);
+        }
         localStorage.setItem("data_history", JSON.stringify(history));
       }
-      // Overwrite only today's data back
+      // Save only today's data back
       localStorage.setItem("todays_data", JSON.stringify(filtered));
     }
 
     setTodayData(filtered);
   }, [today]);
+
+  // Button handler
+  const handleSaveAverage = () => {
+    if (todayData.length === 0) return;
+
+    const avg = calculateAverage(todayData);
+    if (avg) {
+      const history = JSON.parse(localStorage.getItem("data_history")) || [];
+      const existingIndex = history.findIndex((h) => h.date === avg.date);
+
+      if (existingIndex >= 0) {
+        history[existingIndex] = avg; // Replace existing
+      } else {
+        history.push(avg); // Add new
+      }
+
+      localStorage.setItem("data_history", JSON.stringify(history));
+
+      // 🔹 Clear today's data after saving
+      localStorage.setItem("todays_data", JSON.stringify([]));
+      setTodayData([]);
+
+      alert("Average saved to history and today's data cleared!");
+    }
+  };
 
   return (
     <div className="bg-base-200 min-h-screen">
@@ -61,8 +95,18 @@ const TodayPage = () => {
         <NavLink to="/" className="btn btn-primary mb-4">
           Back to home
         </NavLink>
+
         <div className="bg-base-100 rounded-box shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Today's Data ({today})</h2>
+
+          {/* Save Average Button */}
+          <button
+            className="btn btn-secondary mb-4"
+            onClick={handleSaveAverage}
+            disabled={todayData.length === 0}
+          >
+            Save Average to History
+          </button>
 
           {todayData.length === 0 ? (
             <p className="text-center text-gray-500">

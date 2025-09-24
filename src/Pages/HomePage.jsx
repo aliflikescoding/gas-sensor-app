@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Bluetooth,
   BluetoothConnected,
@@ -28,9 +28,64 @@ const HomePage = () => {
   const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
   const CHARACTERISTIC_UUID = "abcd1234-5678-1234-5678-abcdef123456";
 
+  // Get today's date key for localStorage
+  const getTodayKey = () => {
+    const today = new Date();
+    return `todays_data_${today.toISOString().split("T")[0]}`;
+  };
+
+  // Load today's data from localStorage on component mount
+  useEffect(() => {
+    const todayKey = getTodayKey();
+    const savedData = localStorage.getItem(todayKey);
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        // If we have data from today, you might want to do something with it
+        console.log("Loaded today's data from localStorage:", parsedData);
+      } catch (err) {
+        console.error("Error loading today's data:", err);
+      }
+    }
+  }, []);
+
   const addLog = (message) => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs((prev) => [...prev.slice(-4), `${timestamp}: ${message}`]);
+  };
+
+  const saveToTodaysData = (gasData) => {
+    try {
+      const todayKey = getTodayKey();
+      const timestamp = new Date().toISOString();
+
+      const newEntry = {
+        ...gasData,
+        dateTime: timestamp,
+        timestamp: new Date().getTime(),
+      };
+
+      // Get existing data for today
+      const existingData = localStorage.getItem(todayKey);
+      let todaysData = existingData ? JSON.parse(existingData) : [];
+
+      // Add new entry
+      todaysData.push(newEntry);
+
+      // Keep only the last 100 entries to prevent localStorage overflow
+      if (todaysData.length > 100) {
+        todaysData = todaysData.slice(-100);
+      }
+
+      // Save back to localStorage
+      localStorage.setItem(todayKey, JSON.stringify(todaysData));
+
+      console.log("Saved to today's data:", newEntry);
+      addLog(`Data saved to today's storage (${todaysData.length} entries)`);
+    } catch (err) {
+      console.error("Error saving to today's data:", err);
+      addLog("Error saving data to storage");
+    }
   };
 
   const parseGasData = (dataString) => {
@@ -77,6 +132,9 @@ const HomePage = () => {
     if (parsedData) {
       setGasData(parsedData);
       setLastUpdate(new Date());
+
+      // Save to today's data in localStorage
+      saveToTodaysData(parsedData);
     }
   };
 
@@ -181,6 +239,7 @@ const HomePage = () => {
     }
   };
 
+  
   return (
     <div className="bg-base-200 min-h-screen">
       <div className="container mx-auto py-10 px-4">
@@ -324,6 +383,7 @@ const HomePage = () => {
             <p>• Data updates every 1 minute from the sensor</p>
             <p>• Make sure your ESP32 is powered on</p>
             <p>• Stay within Bluetooth range (typically 10-30 feet)</p>
+            <p>• Data is automatically saved to today's storage</p>
           </div>
         </div>
       </div>

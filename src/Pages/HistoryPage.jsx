@@ -80,6 +80,7 @@ const HistoryPage = () => {
         const importedData = JSON.parse(e.target.result);
         validateAndMergeData(importedData);
       } catch (error) {
+        console.error(error);
         showMessage("Invalid JSON file", "error");
       }
     };
@@ -99,6 +100,7 @@ const HistoryPage = () => {
       validateAndMergeData(importedData);
       setImportData(""); // Clear text area after import
     } catch (error) {
+      console.error(error);
       showMessage("Invalid JSON data", "error");
     }
   };

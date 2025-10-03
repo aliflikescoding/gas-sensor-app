@@ -178,7 +178,8 @@ const TodayPage = () => {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="font-semibold">Etanol:</span>{" "}
-                        {entry.etanol.toFixed(1)}
+                        {entry.etanol.toFixed(1)} <div className="badge badge-xs">Xsmall</div>
+
                       </div>
                       <div>
                         <span className="font-semibold">CO₂:</span>{" "}

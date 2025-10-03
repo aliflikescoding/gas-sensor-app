@@ -250,9 +250,9 @@ const HomePage = () => {
               )}
             </div>
             <div className="flex items-center gap-4">
-              <NavLink to="/history" className="btn">
+              <NavLink to="/this-month" className="btn">
                 <History className="w-5 h-5" />
-                History
+                This month average
               </NavLink>
               <NavLink to="/today" className="btn">
                 <BookOpenText className="w-5 h-5" />

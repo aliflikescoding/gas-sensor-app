@@ -23,10 +23,23 @@ ChartJS.register(
   Legend
 );
 
-const HistoryPage = () => {
+const ThisMonthPage = () => {
   const [historyData, setHistoryData] = useState([]);
   const [importData, setImportData] = useState("");
   const [message, setMessage] = useState({ text: "", type: "" });
+
+  // Eco thresholds (daily average)
+  const ecoThresholds = {
+    co: 50, // CO threshold: 5-50 ppm
+    co2: 100000, // CO₂ threshold: 20,000-100,000 ppm
+    nh3: 10, // NH₃ threshold: 1-10 ppm
+    etanol: 10, // Ethanol threshold: 1-10 ppm
+  };
+
+  // Function to check if value is eco-friendly
+  const isEco = (value, pollutant) => {
+    return value <= ecoThresholds[pollutant];
+  };
 
   useEffect(() => {
     loadHistoryData();
@@ -167,7 +180,7 @@ const HistoryPage = () => {
   const clearAllData = () => {
     if (
       window.confirm(
-        "Are you sure you want to clear all historical data? This action cannot be undone."
+        "Are you sure you want to clear all of this months data? This action cannot be undone."
       )
     ) {
       localStorage.removeItem("data_history");
@@ -213,7 +226,7 @@ const HistoryPage = () => {
     responsive: true,
     plugins: {
       legend: { position: "top" },
-      title: { display: true, text: "Historical Data Averages" },
+      title: { display: true, text: "This months Averages"},
     },
     scales: {
       x: {
@@ -262,7 +275,7 @@ const HistoryPage = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Export Data</h3>
               <p className="text-sm text-gray-600">
-                Download your historical data as a JSON file to share or backup.
+                Download this months data as a JSON file to share or backup.
               </p>
               <button
                 onClick={exportData}
@@ -319,7 +332,7 @@ const HistoryPage = () => {
                 Danger Zone
               </h3>
               <p className="text-sm text-gray-600 mb-3">
-                Permanently delete all historical data. This action cannot be
+                Permanently delete all of this months data. This action cannot be
                 undone.
               </p>
               <button onClick={clearAllData} className="btn btn-error">
@@ -330,21 +343,21 @@ const HistoryPage = () => {
         </div>
 
         <div className="bg-base-100 rounded-box shadow-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-4">Historical Data Chart</h2>
+          <h2 className="text-2xl font-bold mb-4">This months data average</h2>
           {historyData.length > 0 ? (
             <Line data={chartData} options={chartOptions} />
           ) : (
             <p className="text-center text-gray-500">
-              No historical data available for chart.
+              No available for chart.
             </p>
           )}
         </div>
 
         <div className="bg-base-100 rounded-box shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-4">Historical Data</h2>
+          <h2 className="text-2xl font-bold mb-4">This months data</h2>
           {historyData.length === 0 ? (
             <p className="text-center text-gray-500">
-              No historical data available.
+              No this months data available.
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -357,19 +370,55 @@ const HistoryPage = () => {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="font-semibold">Etanol:</span>{" "}
-                        {entry.etanol?.toFixed(1) || "N/A"}
+                        {entry.etanol?.toFixed(1) || "N/A"}{" "}
+                        <div
+                          className={`badge badge-xs ${
+                            isEco(entry.etanol, "etanol")
+                              ? "badge-success"
+                              : "badge-error"
+                          }`}
+                        >
+                          {isEco(entry.etanol, "etanol") ? "eco" : "not eco"}
+                        </div>
                       </div>
                       <div>
                         <span className="font-semibold">CO₂:</span>{" "}
-                        {entry.co2?.toFixed(1) || "N/A"}
+                        {entry.co2?.toFixed(1) || "N/A"}{" "}
+                        <div
+                          className={`badge badge-xs ${
+                            isEco(entry.co2, "co2")
+                              ? "badge-success"
+                              : "badge-error"
+                          }`}
+                        >
+                          {isEco(entry.co2, "co2") ? "eco" : "not eco"}
+                        </div>
                       </div>
                       <div>
                         <span className="font-semibold">CO:</span>{" "}
-                        {entry.co?.toFixed(1) || "N/A"}
+                        {entry.co?.toFixed(1) || "N/A"}{" "}
+                        <div
+                          className={`badge badge-xs ${
+                            isEco(entry.co, "co")
+                              ? "badge-success"
+                              : "badge-error"
+                          }`}
+                        >
+                          {isEco(entry.co, "co") ? "eco" : "not eco"}
+                        </div>
                       </div>
                       <div>
                         <span className="font-semibold">NH₃:</span>{" "}
-                        {entry.nh3?.toFixed(1) || "N/A"}
+                        {entry.nh3?.toFixed(1) || "N/A"}{" "}
+                        <div
+                          className={`badge badge-xs ${
+                            isEco(entry.nh3, "nh3")
+                              ? "badge-success"
+                              : "badge-error"
+                          }`}
+                        >
+                          {isEco(entry.nh3, "nh3") ? "eco" : "not eco"}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -383,4 +432,4 @@ const HistoryPage = () => {
   );
 };
 
-export default HistoryPage;
+export default ThisMonthPage;

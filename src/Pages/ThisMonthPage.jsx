@@ -28,17 +28,47 @@ const ThisMonthPage = () => {
   const [importData, setImportData] = useState("");
   const [message, setMessage] = useState({ text: "", type: "" });
 
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+
   // Eco thresholds (daily average)
   const ecoThresholds = {
-    co: 50, // CO threshold: 5-50 ppm
-    co2: 100000, // CO₂ threshold: 20,000-100,000 ppm
-    nh3: 10, // NH₃ threshold: 1-10 ppm
-    etanol: 10, // Ethanol threshold: 1-10 ppm
+    co: 50,
+    co2: 100000,
+    nh3: 10,
+    etanol: 10,
   };
 
   // Function to check if value is eco-friendly
   const isEco = (value, pollutant) => {
     return value <= ecoThresholds[pollutant];
+  };
+
+  // Helper: calculate monthly average
+  const calculateMonthlyAverage = (data) => {
+    if (data.length === 0) return null;
+    const sums = data.reduce(
+      (acc, entry) => {
+        acc.etanol += entry.etanol || 0;
+        acc.co2 += entry.co2 || 0;
+        acc.co += entry.co || 0;
+        acc.nh3 += entry.nh3 || 0;
+        return acc;
+      },
+      { etanol: 0, co2: 0, co: 0, nh3: 0 }
+    );
+    const count = data.length;
+
+    // Get the month from the first entry
+    const monthDate = data[0].date.slice(0, 7); // YYYY-MM
+
+    return {
+      month: monthDate,
+      etanol: sums.etanol / count,
+      co2: sums.co2 / count,
+      co: sums.co / count,
+      nh3: sums.nh3 / count,
+      dayCount: count,
+    };
   };
 
   useEffect(() => {
@@ -47,7 +77,57 @@ const ThisMonthPage = () => {
 
   const loadHistoryData = () => {
     const history = JSON.parse(localStorage.getItem("data_history")) || [];
-    const sortedHistory = history.sort(
+
+    // Filter data for current month and previous months
+    const currentMonthData = history.filter(
+      (entry) => entry.date.slice(0, 7) === currentMonth
+    );
+
+    const previousMonthsData = history.filter(
+      (entry) => entry.date.slice(0, 7) !== currentMonth
+    );
+
+    // If there's previous months data, automatically archive it
+    if (previousMonthsData.length > 0) {
+      // Group by month
+      const monthGroups = {};
+      previousMonthsData.forEach((entry) => {
+        const month = entry.date.slice(0, 7);
+        if (!monthGroups[month]) {
+          monthGroups[month] = [];
+        }
+        monthGroups[month].push(entry);
+      });
+
+      // Calculate average for each month and save to monthly_data
+      const monthlyData =
+        JSON.parse(localStorage.getItem("monthly_data")) || [];
+
+      Object.keys(monthGroups).forEach((month) => {
+        const avg = calculateMonthlyAverage(monthGroups[month]);
+        if (avg) {
+          const existingIndex = monthlyData.findIndex((m) => m.month === month);
+          if (existingIndex >= 0) {
+            monthlyData[existingIndex] = avg;
+          } else {
+            monthlyData.push(avg);
+          }
+        }
+      });
+
+      // Save monthly data
+      localStorage.setItem("monthly_data", JSON.stringify(monthlyData));
+
+      // Update data_history to only keep current month
+      localStorage.setItem("data_history", JSON.stringify(currentMonthData));
+
+      showMessage(
+        `Archived ${previousMonthsData.length} entries from previous months`,
+        "success"
+      );
+    }
+
+    const sortedHistory = currentMonthData.sort(
       (a, b) => new Date(b.date) - new Date(a.date)
     );
     setHistoryData(sortedHistory);
@@ -56,6 +136,35 @@ const ThisMonthPage = () => {
   const showMessage = (text, type = "info") => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: "", type: "" }), 3000);
+  };
+
+  // Save monthly average manually
+  const handleSaveMonthlyAverage = () => {
+    if (historyData.length === 0) {
+      showMessage("No data available to save", "error");
+      return;
+    }
+
+    const avg = calculateMonthlyAverage(historyData);
+    if (avg) {
+      const monthlyData =
+        JSON.parse(localStorage.getItem("monthly_data")) || [];
+      const existingIndex = monthlyData.findIndex((m) => m.month === avg.month);
+
+      if (existingIndex >= 0) {
+        monthlyData[existingIndex] = avg;
+      } else {
+        monthlyData.push(avg);
+      }
+
+      localStorage.setItem("monthly_data", JSON.stringify(monthlyData));
+      localStorage.setItem("data_history", JSON.stringify([]));
+      setHistoryData([]);
+      showMessage(
+        `Monthly average saved (${avg.dayCount} days averaged) and this month's data cleared!`,
+        "success"
+      );
+    }
   };
 
   // Export data to JSON file
@@ -98,7 +207,7 @@ const ThisMonthPage = () => {
       }
     };
     reader.readAsText(file);
-    event.target.value = ""; // Reset file input
+    event.target.value = "";
   };
 
   // Import data from text area
@@ -111,7 +220,7 @@ const ThisMonthPage = () => {
     try {
       const importedData = JSON.parse(importData);
       validateAndMergeData(importedData);
-      setImportData(""); // Clear text area after import
+      setImportData("");
     } catch (error) {
       console.error(error);
       showMessage("Invalid JSON data", "error");
@@ -120,13 +229,11 @@ const ThisMonthPage = () => {
 
   // Validate and merge imported data with existing data
   const validateAndMergeData = (importedData) => {
-    // Validate data structure
     if (!Array.isArray(importedData)) {
       showMessage("Imported data must be an array", "error");
       return;
     }
 
-    // Validate each entry
     const validEntries = importedData.filter(
       (entry) =>
         entry &&
@@ -140,35 +247,26 @@ const ThisMonthPage = () => {
       return;
     }
 
-    // Get existing data
     const existingData = JSON.parse(localStorage.getItem("data_history")) || [];
-
-    // Create a map to avoid duplicates (based on date)
     const dataMap = new Map();
 
-    // Add existing data to map
     existingData.forEach((entry) => {
       if (entry.date) {
         dataMap.set(entry.date, entry);
       }
     });
 
-    // Add imported data to map (newer data will overwrite older data with same date)
     validEntries.forEach((entry) => {
       if (entry.date) {
         dataMap.set(entry.date, entry);
       }
     });
 
-    // Convert back to array and sort
     const mergedData = Array.from(dataMap.values()).sort(
       (a, b) => new Date(b.date) - new Date(a.date)
     );
 
-    // Save to localStorage
     localStorage.setItem("data_history", JSON.stringify(mergedData));
-
-    // Update state
     setHistoryData(mergedData);
     showMessage(
       `Successfully imported ${validEntries.length} entries. Total entries: ${mergedData.length}`,
@@ -180,7 +278,7 @@ const ThisMonthPage = () => {
   const clearAllData = () => {
     if (
       window.confirm(
-        "Are you sure you want to clear all of this months data? This action cannot be undone."
+        "Are you sure you want to clear all of this month's data? This action cannot be undone."
       )
     ) {
       localStorage.removeItem("data_history");
@@ -226,7 +324,7 @@ const ThisMonthPage = () => {
     responsive: true,
     plugins: {
       legend: { position: "top" },
-      title: { display: true, text: "This months Averages"},
+      title: { display: true, text: "This Month's Averages" },
     },
     scales: {
       x: {
@@ -270,12 +368,32 @@ const ThisMonthPage = () => {
             </div>
           )}
 
+          {/* Save Monthly Average Button */}
+          {historyData.length > 0 && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="text-lg font-semibold mb-2">
+                Save Monthly Average
+              </h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Calculate and save the average of all daily data for this month
+                ({currentMonth}). This will archive {historyData.length} day(s)
+                of data.
+              </p>
+              <button
+                onClick={handleSaveMonthlyAverage}
+                className="btn btn-secondary"
+              >
+                Save Average to Monthly History
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Export Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Export Data</h3>
               <p className="text-sm text-gray-600">
-                Download this months data as a JSON file to share or backup.
+                Download this month's data as a JSON file to share or backup.
               </p>
               <button
                 onClick={exportData}
@@ -332,8 +450,8 @@ const ThisMonthPage = () => {
                 Danger Zone
               </h3>
               <p className="text-sm text-gray-600 mb-3">
-                Permanently delete all of this months data. This action cannot be
-                undone.
+                Permanently delete all of this month's data. This action cannot
+                be undone.
               </p>
               <button onClick={clearAllData} className="btn btn-error">
                 Clear All Data
@@ -343,21 +461,23 @@ const ThisMonthPage = () => {
         </div>
 
         <div className="bg-base-100 rounded-box shadow-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-4">This months data average</h2>
+          <h2 className="text-2xl font-bold mb-4">This Month's Data Average</h2>
           {historyData.length > 0 ? (
             <Line data={chartData} options={chartOptions} />
           ) : (
             <p className="text-center text-gray-500">
-              No available for chart.
+              No data available for chart.
             </p>
           )}
         </div>
 
         <div className="bg-base-100 rounded-box shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-4">This months data</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            This Month's Data ({currentMonth})
+          </h2>
           {historyData.length === 0 ? (
             <p className="text-center text-gray-500">
-              No this months data available.
+              No data available for this month.
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

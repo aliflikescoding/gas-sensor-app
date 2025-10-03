@@ -208,8 +208,8 @@ const HomePage = () => {
     <div className="bg-base-200 min-h-screen">
       <div className="container mx-auto py-10 px-4">
         <div className="bg-base-100 rounded-box shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+          <div className="flex sm:flex-row flex-col sm:items-center items-start sm:justify-between justify-start mb-4">
+            <div className="flex items-center mb-4 sm:mb-0 gap-3">
               {isConnected ? (
                 <>
                   <BluetoothConnected className="w-6 h-6 text-success" />
@@ -237,7 +237,7 @@ const HomePage = () => {
                 </>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <NavLink to="/monthly" className="btn">
                 <History className="w-5 h-5" />
                 Monthly average

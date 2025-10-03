@@ -6,6 +6,7 @@ import {
   Wifi,
   History,
   BookOpenText,
+  MapPin,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -13,6 +14,7 @@ const HomePage = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [gasData, setGasData] = useState({
+    location: "",
     etanol: 0,
     co2: 0,
     co: 0,
@@ -38,22 +40,15 @@ const HomePage = () => {
         dateTime: timestamp,
       };
 
-      // Get existing data
       const existingData = localStorage.getItem("todays_data");
       let todaysData = existingData ? JSON.parse(existingData) : [];
 
-      // Add new entry
       todaysData.push(newEntry);
-
-      // Keep only the last 100 entries
       if (todaysData.length > 100) {
         todaysData = todaysData.slice(-100);
       }
 
-      // Save back to localStorage
       localStorage.setItem("todays_data", JSON.stringify(todaysData));
-
-      console.log("Saved to today's data:", newEntry);
       addLog(`Data saved to today's storage (${todaysData.length} entries)`);
     } catch (err) {
       console.error("Error saving to today's data:", err);
@@ -73,22 +68,29 @@ const HomePage = () => {
       const data = {};
 
       parts.forEach((part) => {
-        const [gas, value] = part.split(":");
-        const numericValue = parseFloat(value.replace("ppm", ""));
+        const [key, value] = part.split(":");
+        if (!key || !value) return;
 
-        switch (gas.toLowerCase()) {
-          case "etanol":
-            data.etanol = numericValue;
-            break;
-          case "co2":
-            data.co2 = numericValue;
-            break;
-          case "co":
-            data.co = numericValue;
-            break;
-          case "nh3":
-            data.nh3 = numericValue;
-            break;
+        const lowerKey = key.toLowerCase();
+
+        if (lowerKey === "location") {
+          data.location = value.trim();
+        } else {
+          const numericValue = parseFloat(value.replace("ppm", "").trim());
+          switch (lowerKey) {
+            case "etanol":
+              data.etanol = numericValue;
+              break;
+            case "co2":
+              data.co2 = numericValue;
+              break;
+            case "co":
+              data.co = numericValue;
+              break;
+            case "nh3":
+              data.nh3 = numericValue;
+              break;
+          }
         }
       });
 
@@ -110,40 +112,19 @@ const HomePage = () => {
     if (parsedData) {
       setGasData(parsedData);
       setLastUpdate(new Date());
-
       saveToTodaysData(parsedData);
     }
   };
 
   const connectToBluetooth = async () => {
     if (!navigator.bluetooth) {
-      const isChrome = navigator.userAgent.includes("Chrome");
-      const isLinux = navigator.userAgent.includes("Linux");
-      const isAndroid = navigator.userAgent.includes("Android");
-      const isWindows = navigator.userAgent.includes("Windows");
-
-      if (isChrome && isLinux) {
-        setError(
-          "Web Bluetooth requires flags in Chrome on Linux. Start Chrome with: google-chrome --enable-experimental-web-platform-features --enable-web-bluetooth"
-        );
-      } else if (isChrome && (isWindows || isAndroid)) {
-        // Windows and Android Chrome users can proceed normally
-        setError(
-          "Web Bluetooth API is not available. Make sure Bluetooth is enabled on your device."
-        );
-      } else {
-        setError(
-          "Web Bluetooth API is not supported in this browser. Please use Chrome."
-        );
-      }
+      setError("Web Bluetooth API not available in this browser.");
       return;
     }
 
     const isAvailable = await navigator.bluetooth.getAvailability();
     if (!isAvailable) {
-      setError(
-        "Bluetooth is not available. Make sure Bluetooth is enabled on your system."
-      );
+      setError("Bluetooth is not available on this device.");
       return;
     }
 
@@ -276,6 +257,14 @@ const HomePage = () => {
             <div className="alert alert-error mb-4">
               <AlertCircle className="w-5 h-5" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {/* Show Location */}
+          {gasData.location && (
+            <div className="mb-4 flex items-center gap-2 text-base-content opacity-80">
+              <MapPin className="w-5 h-5" />
+              <span>Location: {gasData.location}</span>
             </div>
           )}
 

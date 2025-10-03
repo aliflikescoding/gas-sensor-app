@@ -178,8 +178,7 @@ const TodayPage = () => {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="font-semibold">Etanol:</span>{" "}
-                        {entry.etanol.toFixed(1)} <div className="badge badge-xs">Xsmall</div>
-
+                        {entry.etanol.toFixed(1)}{" "}
                       </div>
                       <div>
                         <span className="font-semibold">CO₂:</span>{" "}
@@ -193,6 +192,14 @@ const TodayPage = () => {
                         <span className="font-semibold">NH₃:</span>{" "}
                         {entry.nh3.toFixed(1)}
                       </div>
+
+                      {/* Location at bottom */}
+                      {entry.location && (
+                        <div className="mt-3 text-xs text-gray-600 border-t pt-2">
+                          <span className="font-semibold">Location:</span>{" "}
+                          {entry.location}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

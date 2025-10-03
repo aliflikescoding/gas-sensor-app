@@ -134,9 +134,10 @@ const HomePage = () => {
       addLog("Searching for MQ135_Sensor...");
 
       const device = await navigator.bluetooth.requestDevice({
-        filters: [{ name: "MQ135_Sensor" }],
+        acceptAllDevices: true,
         optionalServices: [SERVICE_UUID],
       });
+
 
       deviceRef.current = device;
       addLog(`Found device: ${device.name}`);

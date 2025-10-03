@@ -117,16 +117,23 @@ const HomePage = () => {
 
   const connectToBluetooth = async () => {
     if (!navigator.bluetooth) {
-      if (
-        navigator.userAgent.includes("Chrome") &&
-        navigator.userAgent.includes("Linux")
-      ) {
+      const isChrome = navigator.userAgent.includes("Chrome");
+      const isLinux = navigator.userAgent.includes("Linux");
+      const isAndroid = navigator.userAgent.includes("Android");
+      const isWindows = navigator.userAgent.includes("Windows");
+
+      if (isChrome && isLinux) {
         setError(
           "Web Bluetooth requires flags in Chrome on Linux. Start Chrome with: google-chrome --enable-experimental-web-platform-features --enable-web-bluetooth"
         );
+      } else if (isChrome && (isWindows || isAndroid)) {
+        // Windows and Android Chrome users can proceed normally
+        setError(
+          "Web Bluetooth API is not available. Make sure Bluetooth is enabled on your device."
+        );
       } else {
         setError(
-          "Web Bluetooth API is not supported in this browser. Use Chrome, Edge, or Opera."
+          "Web Bluetooth API is not supported in this browser. Please use Chrome."
         );
       }
       return;
@@ -250,6 +257,10 @@ const HomePage = () => {
               )}
             </div>
             <div className="flex items-center gap-4">
+              <NavLink to="/monthly" className="btn">
+                <History className="w-5 h-5" />
+                Monthly average
+              </NavLink>
               <NavLink to="/this-month" className="btn">
                 <History className="w-5 h-5" />
                 This month average
